@@ -2,6 +2,7 @@ package config
 
 import "encoding/json"
 import "os"
+import "path/filepath"
 
 type Configuration struct {
 	HostName string
@@ -9,8 +10,8 @@ type Configuration struct {
 }
 
 func AppConfig() Configuration {
-
-	file, ok := os.Open("config/httpd.json")
+	absPath, _ := filepath.Abs("httpd.json")
+	file, ok := os.Open(absPath)
 	defer file.Close()
 
 	if ok != nil {

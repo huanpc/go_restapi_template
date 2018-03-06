@@ -2,7 +2,6 @@ package router
 
 import (
 	"net/http"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/go-chi/chi"
 	chiMiddleware "github.com/go-chi/chi/middleware"

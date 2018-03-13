@@ -27,14 +27,19 @@ func Register(r *chi.Mux) {
 
 	r.Use(log.NewStructuredLogger(logger))
 
-	//
+	// Template
 	r.Group(func(r chi.Router) {
 		r.Get("/apis/about", makeHandler(handler.About))
 	})
 
-	// API authentication
+	// API which receive requests from nginx-rtmp
 	r.Group(func(r chi.Router) {
 		r.Post("/apis/auth", makeHandler(handler.Auth))
+	})
+
+	// API logging & tracking
+	r.Group(func(r chi.Router) {
+		r.Post("/apis/event", makeHandler(handler.Event))
 	})
 }
 

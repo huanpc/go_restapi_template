@@ -16,9 +16,9 @@ func main() {
 	r := chi.NewRouter()
 
 	router.Register(r)
-	log.Printf("Start listening on localhost:8080")
+	log.Printf(fmt.Sprintf("%v:%v", cfg.HOST_ADDRESS, cfg.Port))
 
-	if err := http.ListenAndServe(fmt.Sprintf("%v:%v", cfg.HostName, cfg.Port), r); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf("%v:%v", cfg.HOST_ADDRESS, cfg.Port), r); err != nil {
 		panic(err)
 	}
 }

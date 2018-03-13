@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 	"net/http"
@@ -31,19 +34,31 @@ func (httpRequest *HttpRequest) MakeRequest() *HttpResponse {
 	u.Path = httpRequest.Path
 	url := u.String()
 
-	client := &http.Client{}
-	r, _ := http.NewRequest(httpRequest.Method, url, strings.NewReader(httpRequest.Body.Encode()))
-	r.Header.Add("Authorization", httpRequest.Authen.Token)
-	r.Header.Add("Host", httpRequest.Hosts)
-	r.Header.Add("Content-Type", "application/x-wwww-form-urlencoded")
+	inputBody := httpRequest.Body.Encode()
+	r, _ := http.NewRequest(httpRequest.Method, url, strings.NewReader(inputBody))
+	r.Header.Add("authorization", httpRequest.Authen.Token)
+	r.Header.Add("host", httpRequest.Hosts)
+	r.Header.Add("content-type", "application/x-www-form-urlencoded")
 	r.Header.Add("Content-Length", strconv.Itoa(len(httpRequest.Body.Encode())))
+	
+	resp, err := http.DefaultClient.Do(r)	
 
-	resp, _ := client.Do(r)
-	buffer := make([]byte, resp.ContentLength)
-	resp.Body.Read(buffer)
-	stringBuffer := string(buffer[:resp.ContentLength])
-	return &HttpResponse{
-		Code: resp.StatusCode,
-		Data: stringBuffer,
+	if err != nil {
+		log.Println(resp.StatusCode)
+		return &HttpResponse{
+			Code: resp.StatusCode,
+		}
 	}
+	defer resp.Body.Close()
+	
+	httpResponse := &HttpResponse{
+		Code: resp.StatusCode,
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(resp)
+	fmt.Println(string(body))
+	if err != nil {
+		httpResponse.Data = string(body)
+	}
+	return httpResponse
 }

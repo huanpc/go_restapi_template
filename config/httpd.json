@@ -1,6 +1,8 @@
 {
-  "HostName": "127.0.0.1",
+  "HOST_NAME": "dev.apistream.ereka.vn",
+  "HOST_ADDRESS": "dev.apistream.ereka.vn",
   "Port": "8080",
-  "ELS_HOST": "10.60.150.116",
-  "ES_PORT": "9200"
+  "ELS_HOST": "http://dev.elk.ereka.vn",
+  "ES_PORT": "9200",
+  "API_GATEWAY": "http://127.0.0.1:8000"  
 }

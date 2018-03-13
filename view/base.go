@@ -4,10 +4,11 @@ import "net/http"
 
 type ApiResponse struct {
 	Headers map[string]string `json:"-"`
-	Code    int
-	Data    interface{} `json:"data,omitempty"`
+	Code    int 		`json:"code"`
+	Data    interface{} `json:"data"`
+	Message string		`json:"message"`
 }
 
 func Ok(data interface{}) ApiResponse {
-	return ApiResponse{Code: http.StatusOK, Data: data}
+	return ApiResponse{Code: http.StatusOK, Data: data, Message: "success"}
 }

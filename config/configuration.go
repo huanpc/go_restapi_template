@@ -1,16 +1,33 @@
 package config
 
-import "encoding/json"
-import "os"
-import "path/filepath"
+import (
+	"strings"
+	"encoding/json"
+	"os"
+	"path/filepath"
+)
 
 type Configuration struct {
-	HostName string
-	Port     string
+	HOST_ADDRESS		string
+	HOST_NAME 			string
+	Port     			string
+	ELS_HOST     		string
+	ES_PORT     		string
+	API_GATEWAY     	string
+	MYSQL_USERNAME     	string
+	MYSQL_PASSWORD     	string
+	MYSQL_DB     		string
 }
 
-func AppConfig() Configuration {
-	absPath, _ := filepath.Abs("httpd.json")
+func AppConfig() Configuration {	
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+    if err != nil {
+        panic("Config dir is invalid")
+	}
+	runes := []rune(dir)	
+	rootPath := string(runes[0:strings.Index(dir, "apistream")]) + "apistream"
+	absPath:= rootPath + "/config/httpd.json"
+	println(absPath)
 	file, ok := os.Open(absPath)
 	defer file.Close()
 

@@ -12,11 +12,13 @@ type Configuration struct {
 	HOST_NAME 			string
 	Port     			string
 	ELS_HOST     		string
-	ES_PORT     		string
+	ELS_PORT     		string
 	API_GATEWAY     	string
-	MYSQL_USERNAME     	string
-	MYSQL_PASSWORD     	string
-	MYSQL_DB     		string
+	STREAM_DB_HOST     	string
+	STREAM_DB_PORT     	string
+	STREAM_DB_NAME     		string
+	STREAM_DB_USERNAME     		string
+	STREAM_DB_PASSWORD     		string
 }
 
 func AppConfig() Configuration {	
@@ -24,7 +26,8 @@ func AppConfig() Configuration {
     if err != nil {
         panic("Config dir is invalid")
 	}
-	runes := []rune(dir)	
+	runes := []rune(dir)
+	println(dir)
 	rootPath := string(runes[0:strings.Index(dir, "apistream")]) + "apistream"
 	absPath:= rootPath + "/config/httpd.json"
 	println(absPath)

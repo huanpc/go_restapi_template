@@ -1,19 +1,87 @@
 package handler
 
 import (
+	"apistream/utils"
+	"reflect"
+	"strconv"
+	"time"
 	"strings"
 	"log"
 	"net/http"
 	"apistream/view"
-	// "context"
+	"context"
 	"apistream/storage"
-	// "apistream/config"
-	// "fmt"
+	"apistream/config"
+	"fmt"
+	"net/url"
+	"errors"
 )
+
+func storeDB (client storage.MySqlClient, input *storage.ChannelTable){
+	table := storage.Table{
+		Name: "channel",
+		DateTimeColumns: []string{"time_start", "time_end"},
+		NotNullColumns: []string{"channel_name", "channel_alias_name", "owner_id", "storage"},
+		AutoUpdateDateTimeColumns: []string{"time_start", "time_end"},
+	}
+	// insert
+	sqlIn:= storage.PrepareInsert(client.Client, table, input)
+	sqlIn.ExecuteInsert()
+}
+
+func MapJsonKey2Field(dest interface{}) (key2Field map[string]string, keyNotNil []string){
+	t := reflect.TypeOf(dest).Elem()
+	for index := 0; index < t.NumField(); index++ {
+		f := t.Field(index)
+		jsonKey := f.Tag.Get("json")
+		tokens := strings.Split(jsonKey, ",")
+		key2Field[tokens[0]] = f.Name
+		if !utils.IsStringSliceContains(tokens, "omitempty") {
+			keyNotNil = append(keyNotNil, tokens[0])
+		}
+	}
+	return
+}
+
+func ParseToObject(form url.Values, dest interface{}) (err error){
+	errs := make([]string, 0)	
+	destVal := reflect.ValueOf(dest).Elem()
+	for k, v := range form {
+		key2Field, keyNotNil := MapJsonKey2Field(dest)		
+		val := destVal.FieldByName(key2Field[k])		
+		if !val.IsNil() {
+			switch val.Type().Kind() {
+			case reflect.String:
+				val.SetString(v[0])
+			case reflect.Bool:
+				if s, err := strconv.ParseBool(v[0]); err == nil {
+					val.SetBool(s)
+				}				
+			case reflect.Float64:
+				if s, err := strconv.ParseFloat(v[0], 64); err == nil {
+					val.SetFloat(s)
+				}				
+			case reflect.Int64:
+				if s, err := strconv.ParseInt(v[0], 10, 64); err == nil {
+					val.SetInt(s)
+				}
+			}
+		} else {
+			if utils.IsStringSliceContains(keyNotNil, k) {
+				errs = append(errs, k)
+			}
+		}		
+	}
+	if len(errs) > 0 {
+		return errors.New(fmt.Sprintf("missing request params: [%s]", errs))
+	}
+	return nil
+}
+
 
 func Event(bh BaseHandler) view.ApiResponse{
 	// Read config file
-	// cfg := config.AppConfig()
+	cfg := config.AppConfig()
 
 	bh.r.ParseForm()
 	data := bh.r.Form
@@ -25,41 +93,36 @@ func Event(bh BaseHandler) view.ApiResponse{
 		return view.ApiResponse{Code: http.StatusBadRequest, Data: bh.r.Form}
 	}
 
-	/* 
-	2018/03/13 10:13:56 map[jwt:[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3V2hKNk9CUFBSRWp1ZW9WRXYxT2p2SHZlb282c1lTUyJ9.2-CxE7GroMHqTTQ8jFyqD9w3smjwJ4zmQfUziZMwo0k] swfurl:[] pageurl:[] addr:[10.240.152.231] user_id:[141] channel:[xyz] call:[connect] token:[123] app:[live] flashver:[FMLE/3.0 (compatible; Lavf57.71] tcurl:[rtmp://10.240.152.231:1935/live?token=123&user_id=141&channel=xyz&jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3V2hKNk9CUFBSRWp1ZW9WRXYxT2p2SHZlb282c1lTUyJ9.2-CxE7GroMHqTTQ8jFyqD9w3smjwJ4zmQfUziZMwo0k] epoch:[493718001]]
-	2018/03/13 10:13:56 ####################
-	{"http_method":"POST","http_proto":"HTTP/1.0","http_scheme":"http","level":"info","msg":"request complete","remote_addr":"10.240.152.231:34740","resp_bytes_length":0,"resp_elasped_ms":0.595929,"resp_status":0,"ts":"Tue, 13 Mar 2018 03:13:56 UTC","uri":"http://10.60.150.116/apis/auth","user_agent":""}
-
-	*/
-	event := &storage.OnConnectEvent{}
-	if data["call"] != nil {
-		event.Call = data["call"][0]
-	}
-	if data["tc_url"] != nil {
-		event.Call = data["tc_url"][0]
-	}
-	if data["addr"] != nil {
-		event.Call = data["addr"][0]
-	}
-	if data["app"] != nil {
-		event.Call = data["app"][0]
-	}
-	if data["flash_ver"] != nil {
-		event.Call = data["flash_ver"][0]
-	}
-	if data["page_url"] != nil {
-		event.Call = data["page_url"][0]
-	}
 	// index to elastic search
-	// ctx := context.Background()
-	// client := storage.NewEsClient(fmt.Sprintf("http://%v:%v", cfg.ELS_HOST, cfg.ES_PORT), ctx)
-	// item := &storage.Event {
-	// 	Id: "2",
-	// 	IndexName: "event",
-	// 	Type: "streaming_event",
-	// 	Data: event,
-	// }
-	// client.IndexItem(item)
+	// parse to event
+	event := &storage.OnConnectEvent{}
+	err := ParseToObject(data, event)
+	if err != nil {
+		log.Panic(err)
+		return view.BadRequest(err)
+	}
+
+	event.Created = time.Now().UTC()
+	ctx := context.Background()
+	client := storage.NewEsClient(fmt.Sprintf("%v:%v", cfg.ELS_HOST, cfg.ELS_PORT), ctx)
+	item := &storage.Event {
+		Id: strconv.FormatInt(time.Now().UnixNano(), 10),
+		IndexName: "event",
+		Type: "streaming_event",
+		Data: event,
+	}
+	client.IndexItem(item)
+
+	// store do db
+	// parse to channel
+	channel := &storage.ChannelTable{}
+	err = ParseToObject(data, channel)
+	if err != nil {
+		log.Panic(err)
+		return view.BadRequest(err)
+	}
+	mysqlClient := storage.NewMySqlClient(cfg.STREAM_DB_USERNAME, cfg.STREAM_DB_PASSWORD, cfg.STREAM_DB_NAME, cfg.STREAM_DB_HOST, cfg.STREAM_DB_PORT)
+	storeDB(mysqlClient, channel)
 
 	return view.Ok(bh.r.Form)
 }

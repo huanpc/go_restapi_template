@@ -1,0 +1,14 @@
+version: '3.6'
+services:
+  db:
+    image: mariadb:10.0
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: vtadmin
+      MYSQL_PASSWORD: 123456aA@
+      MYSQL_DATABASE: streaming
+    volumes:
+      - ${PWD}/tmp/mysql_data:/var/lib/mysql

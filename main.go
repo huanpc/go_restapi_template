@@ -1,26 +1,47 @@
 package main
 
 import(
-	"apistream/utils"
-	"net/url"
+	"apistream/storage"
+	"apistream/config"
 	"fmt"
+	// "strings"
 )
 
 func main(){
-	request := &utils.HttpRequest{
-		Method: "GET",
-		Domain: "http://10.240.152.228:5001",
-		Path: "/chats/contact",
-		Body: &url.Values{},
-		Authen: &utils.AuthenData{
-			Token: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MzYwNTA4NDQsInVzZXIiOiJ7XCJpZFwiOlwiOTcyNDk2NzU5MTEwMTYzMzFcIixcInJvbGVzXCI6W1wiVXNlclwiXX0ifQ.zxSl1GqAFa115CV56zRmceq8x9LIfs8U0HljN1M5UBU",
-		},
+	// index to elastic search
+	cfg := config.AppConfig()
+	client := storage.NewMySqlClient(cfg.STREAM_DB_USERNAME, cfg.STREAM_DB_PASSWORD, cfg.STREAM_DB_NAME, cfg.STREAM_DB_HOST, cfg.STREAM_DB_PORT)
+	
+	table := storage.Table{
+		Name: "channel",
+		DateTimeColumns: []string{"time_start", "time_end"},
+		NotNullColumns: []string{"channel_name", "channel_alias_name", "owner_id", "storage"},
+		AutoUpdateDateTimeColumns: []string{"time_start", "time_end"},
 	}
-	response := request.MakeRequest()
-	fmt.Println(response.Code)
-	fmt.Println(response.Data)
-}
 
-```
-curl -i -X POST --url http://localhost:8001/apis/ --data 'name=dev.apistream.ereka'   --data 'hosts=dev.apistream.ereka.vn'   --data 'upstream_url=http://10.60.150.116:8080/apis/auth'
-```
+	sql2 := storage.PrepareCount(client.Client, table)
+	ret, err := sql2.ExecuteCount("SELECT count(*) as count FROM "+table.Name + " WHERE channel_name=?", "NgoC Trinh LiveStream 3")
+	if err == nil && ret == 0 {
+		// insert
+		in := &storage.ChannelTable{
+			ChannelName: "NgoC Trinh LiveStream 3",
+			ChannelAliasName: "test22",
+			OwnerId: 1234124,
+			Password: "3w434fsd",
+			Storage: "test.com",
+		}
+		sqlIn:= storage.PrepareInsert(client.Client, table, in)
+		sqlIn.ExecuteInsert()
+	}
+	
+	// select
+	dest := &storage.ChannelTable{}
+	res := make([]storage.ChannelTable, 0)	
+	sql := storage.PrepareSelect(client.Client, table, dest)
+	println(sql.ExecuteSelect(&res, "SELECT * FROM "+table.Name))
+	// count
+	sql3 := storage.PrepareCount(client.Client, table)
+	ret2, err2 := sql3.ExecuteCount("SELECT count(*) as count FROM "+table.Name)
+	fmt.Println(ret2,err2)
+
+}

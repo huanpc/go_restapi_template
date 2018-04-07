@@ -123,7 +123,7 @@ func (esClient *EsClient) IndexItem(item *Event) {
 		// Handle error
 		panic(err)
 	}
-	fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
+	fmt.Printf("Indexed event %s to index %s, type %s\n", item.Data.Call, put1.Index, put1.Type)
 }
 
 /* TODO Update */

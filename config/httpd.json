@@ -1,13 +1,13 @@
 {
-  "HOST_NAME": "dev.apistream.ereka.vn",
-  "HOST_ADDRESS": "dev.apistream.ereka.vn",
+  "HOST_NAME": "",
+  "HOST_ADDRESS": "",
   "Port": "8080",
-  "ELS_HOST": "http://dev.elk.ereka.vn",
+  "ELS_HOST": "",
   "ELS_PORT": "9200",
   "API_GATEWAY": "http://127.0.0.1:8000",
   "STREAM_DB_HOST": "127.0.0.1",
   "STREAM_DB_PORT": "3306",
   "STREAM_DB_NAME": "streaming",
-  "STREAM_DB_USERNAME": "vtadmin",
-  "STREAM_DB_PASSWORD": "123456aA@"
+  "STREAM_DB_USERNAME": "",
+  "STREAM_DB_PASSWORD": ""
 }
